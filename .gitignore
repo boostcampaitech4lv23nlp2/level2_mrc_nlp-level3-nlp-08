@@ -1,0 +1,6 @@
+wandb/*
+models/*
+*.ipynb
+data/*
+data.tar.gz
+.ipynb_checkpoints
