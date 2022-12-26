@@ -377,6 +377,7 @@ class SparseRetrieval:
         return D.tolist(), I.tolist()
 
 
+    
 if __name__ == "__main__":
 
     import argparse
@@ -446,3 +447,5 @@ if __name__ == "__main__":
 
         with timer("single query by exhaustive search"):
             scores, indices = retriever.retrieve(query)
+
+            
