@@ -11,7 +11,7 @@ import pandas as pd
 from datasets import Dataset, concatenate_datasets, load_from_disk
 from sklearn.feature_extraction.text import TfidfVectorizer
 from tqdm.auto import tqdm
-
+from rank_bm25 import BM25Okapi
 
 @contextmanager
 def timer(name):
@@ -58,11 +58,12 @@ class SparseRetrieval:
         )  # set 은 매번 순서가 바뀌므로
         print(f"Lengths of unique contexts : {len(self.contexts)}")
         self.ids = list(range(len(self.contexts)))
-
+        self.tokenize_fn = tokenize_fn
         # Transform by vectorizer
-        self.tfidfv = TfidfVectorizer(
-            tokenizer=tokenize_fn, ngram_range=(1, 2), max_features=50000,
-        )
+        
+        #self.tfidfv = TfidfVectorizer(
+        #    tokenizer=tokenize_fn, ngram_range=(1, 2), max_features=50000,
+        #)
 
         self.p_embedding = None  # get_sparse_embedding()로 생성합니다
         self.indexer = None  # build_faiss()로 생성합니다.
@@ -159,7 +160,7 @@ class SparseRetrieval:
                 Ground Truth가 없는 Query (test) -> Retrieval한 Passage만 반환합니다.
         """
 
-        assert self.p_embedding is not None, "get_sparse_embedding() 메소드를 먼저 수행해줘야합니다."
+        #assert self.p_embedding is not None, "get_sparse_embedding() 메소드를 먼저 수행해줘야합니다."
 
         if isinstance(query_or_dataset, str):
             doc_scores, doc_indices = self.get_relevant_doc(query_or_dataset, k=topk)
@@ -375,6 +376,44 @@ class SparseRetrieval:
         D, I = self.indexer.search(q_embs, k)
 
         return D.tolist(), I.tolist()
+
+class BM25(SparseRetrieval):
+    def __init__(
+        self, 
+        tokenize_fn,
+        data_path: Optional[str] = "../data/", 
+        context_path: Optional[str] = "wikipedia_documents.json"
+    ):
+        super().__init__(tokenize_fn, data_path, context_path)
+        self.bm25 = None
+    def get_sparse_embedding(self):
+        with timer("bm25 building"):
+            self.bm25 = BM25Okapi(self.contexts, tokenizer=self.tokenize_fn) 
+        
+    def get_relevant_doc(self, query: str, k: Optional[int] = 1) -> Tuple[List, List]:
+        with timer("transform"):
+            tokenized_query = self.tokenize_fn(query)
+        with timer("query ex search"):
+            result = self.bm25.get_scores(tokenized_query)
+        sorted_result = np.argsort(result)[::-1]
+        doc_score = result[sorted_result].tolist()[:k]
+        doc_indices = sorted_result.tolist()[:k]
+        return doc_score, doc_indices
+
+    def get_relevant_doc_bulk(
+        self, queries: List, k: Optional[int] = 1
+    ) -> Tuple[List, List]:
+        with timer("transform"):
+            tokenized_queris = [self.tokenize_fn(query) for query in queries]
+        with timer("query ex search"):
+            result = np.array([self.bm25.get_scores(tokenized_query) for tokenized_query in tqdm(tokenized_queris)])
+        doc_scores = []
+        doc_indices = []
+        for i in range(result.shape[0]):
+            sorted_result = np.argsort(result[i, :])[::-1]
+            doc_scores.append(result[i, :][sorted_result].tolist()[:k])
+            doc_indices.append(sorted_result.tolist()[:k])
+        return doc_scores, doc_indices
 
 
     

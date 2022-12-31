@@ -20,7 +20,7 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
-from retrieval import SparseRetrieval
+from retrieval import SparseRetrieval,BM25
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -63,7 +63,7 @@ def main():
 
     # 모델을 초기화하기 전에 난수를 고정합니다.
     set_seed(training_args.seed)
-
+    #dataset_name="../data/train_dataset"
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
 
@@ -105,11 +105,14 @@ def run_sparse_retrieval(
     data_path: str = "../data",
     context_path: str = "wikipedia_documents.json",
 ) -> DatasetDict:
-
+    if data_args.retrieval_choice=="bm25":
+        retriever = BM25(tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path)
+        
     # Query에 맞는 Passage들을 Retrieval 합니다.
-    retriever = SparseRetrieval(
-        tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
-    )
+    elif data_args.retrieval_choice=="tfidf":
+        retriever = SparseRetrieval(
+            tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
+        )
     retriever.get_sparse_embedding()
 
     if data_args.use_faiss:

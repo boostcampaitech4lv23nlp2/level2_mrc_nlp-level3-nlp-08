@@ -90,3 +90,9 @@ class DataTrainingArguments:
     use_faiss: bool = field(
         default=False, metadata={"help": "Whether to build with faiss"}
     )
+    retrieval_choice: str =field(
+        default="bm25",
+        metadata={
+            "help": "choice retrieval algorithms"
+        },
+    )
