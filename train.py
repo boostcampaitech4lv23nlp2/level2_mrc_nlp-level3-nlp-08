@@ -31,6 +31,19 @@ def main():
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     print(model_args.model_name_or_path)
 
+    fold1 = pd.read_csv('./fold1_test.csv')
+    fold2 = pd.read_csv('./fold2_test.csv')
+    fold3 = pd.read_csv('./fold3_test.csv')
+    fold4 = pd.read_csv('./fold4_test.csv')
+    fold5 = pd.read_csv('./fold5_test.csv')
+
+    fold1["answers"] = fold1["answers"].apply(eval)
+    fold2["answers"] = fold2["answers"].apply(eval)
+    fold3["answers"] = fold3["answers"].apply(eval)
+    fold4["answers"] = fold4["answers"].apply(eval)
+    fold5["answers"] = fold5["answers"].apply(eval)
+
+    folds = [fold1, fold2, fold3, fold4, fold5]
     # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
     # training_args.per_device_train_batch_size = 4
     # print(training_args.per_device_train_batch_size)
