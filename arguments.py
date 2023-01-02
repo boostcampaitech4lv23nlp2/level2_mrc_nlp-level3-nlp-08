@@ -16,15 +16,11 @@ class ModelArguments:
     )
     config_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained config name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained config name or path if not the same as model_name"},
     )
     tokenizer_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained tokenizer name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
 
 
@@ -35,7 +31,7 @@ class DataTrainingArguments:
     """
 
     dataset_name: Optional[str] = field(
-        default="../data/train_dataset",
+        default="./data/wiki_korQuAD_aug_dataset",
         metadata={"help": "The name of the dataset to use."},
     )
     overwrite_cache: bool = field(
@@ -83,16 +79,10 @@ class DataTrainingArguments:
     )
     top_k_retrieval: int = field(
         default=10,
-        metadata={
-            "help": "Define how many top-k passages to retrieve based on similarity."
-        },
+        metadata={"help": "Define how many top-k passages to retrieve based on similarity."},
     )
-    use_faiss: bool = field(
-        default=False, metadata={"help": "Whether to build with faiss"}
-    )
-    retrieval_choice: str =field(
+    use_faiss: bool = field(default=False, metadata={"help": "Whether to build with faiss"})
+    retrieval_choice: str = field(
         default="bm25",
-        metadata={
-            "help": "choice retrieval algorithms"
-        },
+        metadata={"help": "choice retrieval algorithms"},
     )
