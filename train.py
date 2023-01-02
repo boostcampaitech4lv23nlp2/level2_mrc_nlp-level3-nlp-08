@@ -25,9 +25,7 @@ def main():
     # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
     # --help flag 를 실행시켜서 확인할 수 도 있습니다.
 
-    parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments)
-    )
+    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     print(model_args.model_name_or_path)
 
@@ -54,9 +52,9 @@ def main():
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
     if model_args.config_name is not None:
-        print("modelname!:  ",model_args.config_name)
-    else: 
-        print("model!!",model_args.model_name_or_path)
+        print("modelname!:  ", model_args.config_name)
+    else:
+        print("model!!", model_args.model_name_or_path)
     # AutoConfig를 이용하여 pretrained model 과 tokenizer를 불러옵니다.
     # argument로 원하는 모델 이름을 설정하면 옵션을 바꿀 수 있습니다.
     config = AutoConfig.from_pretrained(
@@ -74,6 +72,7 @@ def main():
         # rust version이 비교적 속도가 빠릅니다.
         use_fast=True,
     )
+
     model = AutoModelForQuestionAnswering.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -81,7 +80,6 @@ def main():
     )
 
     print(
-        
         type(training_args),
         type(model_args),
         type(datasets),
@@ -119,9 +117,7 @@ def run_mrc(
     pad_on_right = tokenizer.padding_side == "right"
 
     # 오류가 있는지 확인합니다.
-    last_checkpoint, max_seq_length = check_no_error(
-        data_args, training_args, datasets, tokenizer
-    )
+    last_checkpoint, max_seq_length = check_no_error(data_args, training_args, datasets, tokenizer)
 
     # Train preprocessing / 전처리를 진행합니다.
     def prepare_train_features(examples):
@@ -284,20 +280,15 @@ def run_mrc(
             output_dir=training_args.output_dir,
         )
         # Metric을 구할 수 있도록 Format을 맞춰줍니다.
-        formatted_predictions = [
-            {"id": k, "prediction_text": v} for k, v in predictions.items()
-        ]
+        formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
         if training_args.do_predict:
             return formatted_predictions
 
         elif training_args.do_eval:
             references = [
-                {"id": ex["id"], "answers": ex[answer_column_name]}
-                for ex in datasets["validation"]
+                {"id": ex["id"], "answers": ex[answer_column_name]} for ex in datasets["validation"]
             ]
-            return EvalPrediction(
-                predictions=formatted_predictions, label_ids=references
-            )
+            return EvalPrediction(predictions=formatted_predictions, label_ids=references)
 
     metric = load_metric("squad")
 
@@ -344,9 +335,7 @@ def run_mrc(
                 writer.write(f"{key} = {value}\n")
 
         # State 저장
-        trainer.state.save_to_json(
-            os.path.join(training_args.output_dir, "trainer_state.json")
-        )
+        trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
 
     # Evaluation
     if training_args.do_eval:
@@ -360,4 +349,5 @@ def run_mrc(
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     main()
