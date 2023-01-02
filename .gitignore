@@ -10,3 +10,4 @@ outputs
 elastic_setting.py
 elastic_test.py
 *.csv
+*.zip
