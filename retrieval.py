@@ -156,7 +156,7 @@ class Retrieval:
         self, queries: List, k: Optional[int] = 1
     ) -> Tuple[List, List]:
         pass
-class TfidvRetrieval(Retrieval):
+class TfidfRetrieval(Retrieval):
     def __init__(
         self,
         tokenize_fn,
@@ -290,9 +290,10 @@ class TfidvRetrieval(Retrieval):
                     "id": example["id"],
                     # Retrieve한 Passage의 id, context를 반환합니다.
                     "context": " ".join(
-                        [self.contexts[pid] for pid in doc_indices[idx]]
+                        [self.contexts[pid] for pid in doc_indices[idx]] #topk문장 합치기
                     ),
                 }
+
                 if "context" in example.keys() and "answers" in example.keys():
                     # validation 데이터를 사용하면 ground_truth context와 answer도 반환합니다.
                     tmp["original_context"] = example["context"]
