@@ -156,7 +156,7 @@ class Retrieval:
         self, queries: List, k: Optional[int] = 1
     ) -> Tuple[List, List]:
         pass
-class TfidvRetrieval(Retrieval):
+class TfidfRetrieval(Retrieval):
     def __init__(
         self,
         tokenize_fn,
