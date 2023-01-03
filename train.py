@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 from typing import NoReturn
-
+import pandas as pd
 from arguments import DataTrainingArguments, ModelArguments
 from datasets import DatasetDict, load_from_disk, load_metric
 from trainer_qa import QuestionAnsweringTrainer
@@ -304,6 +304,8 @@ def run_mrc(
     metric = load_metric("squad")
 
     def compute_metrics(p: EvalPrediction):
+        pd.DataFrame(p.predictions).to_csv("pred.csv")
+        pd.DataFrame(p.label_ids).to_csv("label.csv")
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
     # Trainer 초기화

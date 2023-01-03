@@ -22,24 +22,6 @@ from transformers import (
     set_seed,
 )
 
-"""
-Traceback (most recent call last):
-  File "train.py", line 163, in <module>
-    main()
-  File "train.py", line 68, in main
-    trained_model = train(args, train_dataset, model)
-  File "train.py", line 135, in train
-    outputs = model(p_inputs, q_inputs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1190, in _call_impl
-    return forward_call(*input, **kwargs)
-  File "/opt/ml/input/level2_mrc_nlp-level3-nlp-08/colbert/model.py", line 36, in forward
-    return self.get_score(Q, D)
-  File "/opt/ml/input/level2_mrc_nlp-level3-nlp-08/colbert/model.py", line 75, in get_score
-    q_sequence_output = Q.view(
-RuntimeError: shape '[16, 1, -1, 128]' is invalid for input of size 118272
-"""
-
-
 def main():
 
     set_seed(42)

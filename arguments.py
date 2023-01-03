@@ -31,7 +31,7 @@ class DataTrainingArguments:
     """
 
     dataset_name: Optional[str] = field(
-        default="./data/wiki_korQuAD_aug_dataset",
+        default="./data/train_dataset",  # wiki_korQuAD_aug_dataset",
         metadata={"help": "The name of the dataset to use."},
     )
     overwrite_cache: bool = field(
@@ -78,11 +78,11 @@ class DataTrainingArguments:
         default=64, metadata={"help": "Define how many clusters to use for faiss."}
     )
     top_k_retrieval: int = field(
-        default=100,
+        default=1,
         metadata={"help": "Define how many top-k passages to retrieve based on similarity."},
     )
     use_faiss: bool = field(default=False, metadata={"help": "Whether to build with faiss"})
     retrieval_choice: str = field(
-        default="bm25",
+        default="ColBERT",  # ColBERT, bm25, tfidf
         metadata={"help": "choice retrieval algorithms"},
     )

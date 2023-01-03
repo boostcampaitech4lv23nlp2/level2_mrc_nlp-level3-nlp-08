@@ -54,7 +54,7 @@ class ColbertModel(BertPreTrainedModel):
                         1, 2
                     )  # (batch_size,hidden_size,p_sequence_length)
                     q_sequence_output = Q.view(
-                        240, 1, -1, self.dim
+                        Q.shape[0], 1, -1, self.dim
                     )  # (batch_size, 1, q_sequence_length, hidden_size)
                     dot_prod = torch.matmul(
                         q_sequence_output, p_seqeunce_output

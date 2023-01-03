@@ -22,6 +22,7 @@ from datasets import (
 )
 from retrieval import TfidfRetrieval, BM25
 from trainer_qa import QuestionAnsweringTrainer
+from colbert.inference import run_colbert_retrieval
 from transformers import (
     AutoConfig,
     AutoModelForQuestionAnswering,
@@ -82,13 +83,24 @@ def main():
     )
 
     # True일 경우 : run passage retrieval
+
     if data_args.eval_retrieval:
-        datasets = run_sparse_retrieval(
-            tokenizer.tokenize,
-            datasets,
-            training_args,
-            data_args,
-        )
+        if data_args.retrieval_choice == "ColBERT":
+            print("retriever : USE ColBERT")
+            datasets = run_colbert_retrieval(
+                datasets,
+                training_args,
+                None,
+                data_args.top_k_retrieval,
+            )
+        else:
+            print("retriever : USE sparse retriever")
+            datasets = run_sparse_retrieval(
+                tokenizer.tokenize,
+                datasets,
+                training_args,
+                data_args,
+            )
 
     # eval or predict mrc model
     if training_args.do_eval or training_args.do_predict:
@@ -146,7 +158,7 @@ def run_sparse_retrieval(
                 "question": Value(dtype="string", id=None),
             }
         )
-    df = df.drop(columns=["original_context"])
+        df = df.drop(columns=["original_context"])
     datasets = DatasetDict({"validation": Dataset.from_pandas(df, features=f)})
     return datasets
 
@@ -160,7 +172,6 @@ def run_mrc(
     model,
 ) -> NoReturn:
     print(datasets["validation"])
-    breakpoint()
     # eval 혹은 prediction에서만 사용함
     column_names = datasets["validation"].column_names
 
