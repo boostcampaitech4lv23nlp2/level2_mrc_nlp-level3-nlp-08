@@ -7,3 +7,7 @@ data.tar.gz
 __pycache__
 outputs
 playground
+colbert/best_model/*
+colbert/best_model_ori/*
+colbert/rank/*
+colbert/retriever_infer/*
