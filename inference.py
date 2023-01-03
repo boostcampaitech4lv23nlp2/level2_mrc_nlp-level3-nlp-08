@@ -20,7 +20,7 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
-from retrieval import SparseRetrieval,BM25
+from retrieval import TfidfRetrieval,BM25
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -110,7 +110,7 @@ def run_sparse_retrieval(
         
     # Query에 맞는 Passage들을 Retrieval 합니다.
     elif data_args.retrieval_choice=="tfidf":
-        retriever = SparseRetrieval(
+        retriever = TfidfRetrieval(
             tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
         )
     retriever.get_sparse_embedding()
@@ -158,11 +158,12 @@ def run_mrc(
     data_args: DataTrainingArguments,
     training_args: TrainingArguments,
     model_args: ModelArguments,
-    datasets: DatasetDict,
+    datasets: DatasetDict, #Dataset.from_pandas(df, features=f) answer,context,id,question
     tokenizer,
     model,
 ) -> NoReturn:
-
+    print(datasets["validation"])
+    breakpoint()
     # eval 혹은 prediction에서만 사용함
     column_names = datasets["validation"].column_names
 
