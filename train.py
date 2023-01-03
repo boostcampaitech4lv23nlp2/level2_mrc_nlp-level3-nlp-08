@@ -98,21 +98,6 @@ def main():
         # 모델을 초기화하기 전에 난수를 고정합니다.
         set_seed(training_args.seed)
 
-        f = Features(
-            {
-                "answers": Sequence(
-                    feature={
-                        "text": Value(dtype="string", id=None),
-                        "answer_start": Value(dtype="int32", id=None),
-                    },
-                    length=-1,
-                    id=None,
-                ),
-                "context": Value(dtype="string", id=None),
-                "id": Value(dtype="string", id=None),
-                "question": Value(dtype="string", id=None),
-            }
-        )
         datasets = DatasetDict(
             {
                 "train": Dataset.from_pandas(df),
@@ -373,7 +358,12 @@ def run_mrc(
     metric = load_metric("squad")
 
     def compute_metrics(p: EvalPrediction):
-        return metric.compute(predictions=p.predictions, references=p.label_ids)
+        result = metric.compute(predictions=p.predictions, references=p.label_ids)
+        result["eval_exact_match"] = result["exact_match"]
+        del result["exact_match"]
+        result["eval_f1"] = result["f1"]
+        del result["f1"]
+        return result
 
     # Trainer 초기화
     trainer = QuestionAnsweringTrainer(
