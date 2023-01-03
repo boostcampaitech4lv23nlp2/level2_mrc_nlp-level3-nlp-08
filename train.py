@@ -1,10 +1,13 @@
 import logging
 import os
 import sys
+import pandas as pd
+import json
+import wandb
 from typing import NoReturn
 
 from arguments import DataTrainingArguments, ModelArguments
-from datasets import DatasetDict, load_from_disk, load_metric
+from datasets import DatasetDict, load_from_disk, load_metric,Dataset
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -50,7 +53,6 @@ def main():
 
     # 모델을 초기화하기 전에 난수를 고정합니다.
     set_seed(training_args.seed)
-
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
     if model_args.config_name is not None:
@@ -89,6 +91,7 @@ def main():
         type(model),
     )
 
+    wandb.watch(model)
     # do_train mrc model 혹은 do_eval mrc model
     if training_args.do_train or training_args.do_eval:
         run_mrc(data_args, training_args, model_args, datasets, tokenizer, model)
@@ -102,6 +105,12 @@ def run_mrc(
     tokenizer,
     model,
 ) -> NoReturn:
+    training_args.save_total_limit=3
+    #training_args.eval_steps=500
+    #training_args.evaluation_strategy='steps'
+    #training_args.load_best_model_at_end = True
+    #training_args.metric_for_best_model='em'
+    training_args.report_to = ["wandb"]
 
     # dataset을 전처리합니다.
     # training과 evaluation에서 사용되는 전처리는 아주 조금 다른 형태를 가집니다.
@@ -360,4 +369,5 @@ def run_mrc(
 
 
 if __name__ == "__main__":
+    wandb.init(project = "lhJoon_exp", name="data_aug", entity='nlp-08-mrc')
     main()

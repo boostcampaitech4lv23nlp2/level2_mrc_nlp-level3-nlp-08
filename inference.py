@@ -20,7 +20,7 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
-from retrieval import SparseRetrieval,BM25
+from retrieval import BM25,TfidvRetrieval
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -110,7 +110,7 @@ def run_sparse_retrieval(
         
     # Query에 맞는 Passage들을 Retrieval 합니다.
     elif data_args.retrieval_choice=="tfidf":
-        retriever = SparseRetrieval(
+        retriever = TfidvRetrieval(
             tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
         )
     retriever.get_sparse_embedding()
