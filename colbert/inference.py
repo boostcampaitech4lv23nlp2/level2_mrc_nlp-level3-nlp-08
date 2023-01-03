@@ -1,4 +1,4 @@
-# 출처 : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
+# baseline : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
 
 
 def run_colbert_retrieval(datasets):
@@ -16,10 +16,10 @@ def run_colbert_retrieval(datasets):
 
     model.to(device)
 
-    model.load_state_dict(torch.load("/opt/ml/input/code/dense_model/colbert_epoch12.pth"))
+    model.load_state_dict(torch.load("./baset_model/colbert_epoch5.pth"))
 
     print("opening wiki passage...")
-    with open("/opt/ml/input/data/wikipedia_documents.json", "r", encoding="utf-8") as f:
+    with open("/../data/wikipedia_documents.json", "r", encoding="utf-8") as f:
         wiki = json.load(f)
     context = list(dict.fromkeys([v["text"] for v in wiki.values()]))
     print("wiki loaded!!!")
@@ -55,7 +55,7 @@ def run_colbert_retrieval(datasets):
     rank = torch.argsort(dot_prod_scores, dim=1, descending=True).squeeze()
     print(dot_prod_scores)
     print(rank)
-    torch.save(rank, "/opt/ml/input/code/inferecne_colbert_rank.pth")
+    torch.save(rank, "retriever_infer/inferecne_colbert_rank.pth")
     print(rank.size())
 
     k = 100

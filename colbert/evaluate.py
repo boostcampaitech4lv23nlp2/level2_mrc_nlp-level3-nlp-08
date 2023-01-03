@@ -1,4 +1,5 @@
-# 출처 : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
+# baseline : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
+
 
 import json
 import torch.nn.functional as F
@@ -10,14 +11,17 @@ from typing import Callable, Dict, List, NoReturn, Tuple
 import torch
 import numpy as np
 from transformers import AutoTokenizer
+from datasets import load_from_disk
 
 
 def main():
-    epoch = 6
+    epoch = 5
     MODEL_NAME = "klue/bert-base"
 
-    dataset = load_data("/opt/ml/input/data/train.csv")
-    val_dataset = dataset[3952:]
+    datasets = load_from_disk("../data/train_dataset")
+    val_dataset = pd.DataFrame(datasets["validation"])
+    val_dataset = val_dataset.reset_index(drop=True)
+    val_dataset = set_columns(val_dataset)
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = ColbertModel.from_pretrained(MODEL_NAME)
@@ -25,12 +29,10 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    model.load_state_dict(
-        torch.load(f"/opt/ml/input/code/colbert/best_model/colbert_epoch{epoch}.pth")
-    )
+    model.load_state_dict(torch.load(f"./best_model/colbert_epoch{epoch}.pth"))
 
     print("opening wiki passage...")
-    with open("/opt/ml/input/data/wikipedia_documents.json", "r", encoding="utf-8") as f:
+    with open("../data/wikipedia_documents.json", "r", encoding="utf-8") as f:
         wiki = json.load(f)
     context = list(dict.fromkeys([v["text"] for v in wiki.values()]))
     print("wiki loaded!!!")
@@ -71,9 +73,9 @@ def main():
     print(dot_prod_scores)
     print(rank)
     print(rank.size())
-    torch.save(rank, f"/opt/ml/input/code/colbert/rank/rank_epoch{epoch}.pth")
+    torch.save(rank, f"./rank/rank_epoch{epoch}.pth")
 
-    k = 100
+    k = 10
     score = 0
 
     for idx in range(length):

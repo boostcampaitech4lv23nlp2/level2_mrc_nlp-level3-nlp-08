@@ -16,6 +16,8 @@ from transformers import (
     TrainingArguments,
     set_seed,
 )
+
+import wandb
 from utils_qa import check_no_error, postprocess_qa_predictions
 
 logger = logging.getLogger(__name__)
@@ -24,13 +26,22 @@ logger = logging.getLogger(__name__)
 def main():
     # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
     # --help flag 를 실행시켜서 확인할 수 도 있습니다.
-
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    wandb.init(
+        project="sglee_retriever_test",
+        name="retriever_test",
+        entity="nlp-08-mrc",
+        config=training_args,
+    )
+
+    training_args.save_total_limit = 2
+    training_args.report_to = ["wandb"]
+    training_args.per_device_train_batch_size = 32
     print(model_args.model_name_or_path)
 
     # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
-    # training_args.per_device_train_batch_size = 4
+
     # print(training_args.per_device_train_batch_size)
 
     print(f"model is from {model_args.model_name_or_path}")

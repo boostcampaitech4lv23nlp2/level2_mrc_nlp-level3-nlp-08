@@ -1,4 +1,4 @@
-# 출처 : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
+# baseline : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
 
 import pandas as pd
 import torch.nn as nn
@@ -25,7 +25,6 @@ class ColbertModel(BertPreTrainedModel):
         # BertModel 사용
         self.similarity_metric = "cosine"
         self.dim = 128
-        self.batch = 8
         self.bert = BertModel(config)
         self.init_weights()
         self.linear = nn.Linear(config.hidden_size, self.dim, bias=False)
@@ -73,7 +72,7 @@ class ColbertModel(BertPreTrainedModel):
 
                 p_seqeunce_output = D.transpose(1, 2)  # (batch_size,hidden_size,p_sequence_length)
                 q_sequence_output = Q.view(
-                    self.batch, 1, -1, self.dim
+                    Q.shape[0], 1, -1, self.dim
                 )  # (batch_size, 1, q_sequence_length, hidden_size)
                 dot_prod = torch.matmul(
                     q_sequence_output, p_seqeunce_output

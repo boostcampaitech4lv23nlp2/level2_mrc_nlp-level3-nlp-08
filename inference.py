@@ -33,6 +33,7 @@ from transformers import (
     set_seed,
 )
 from utils_qa import check_no_error, postprocess_qa_predictions
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +146,7 @@ def run_sparse_retrieval(
                 "question": Value(dtype="string", id=None),
             }
         )
+    df = df.drop(columns=["original_context"])
     datasets = DatasetDict({"validation": Dataset.from_pandas(df, features=f)})
     return datasets
 
@@ -296,4 +298,5 @@ def run_mrc(
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     main()

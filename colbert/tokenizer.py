@@ -1,4 +1,5 @@
-# 출처 : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
+# baseline : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
+
 
 import pandas as pd
 import torch.nn as nn
@@ -19,8 +20,7 @@ from transformers import (
 )
 
 
-def load_data(datadir):
-    dataset = pd.read_csv(datadir)
+def set_columns(dataset):
     dataset = pd.DataFrame(
         {"context": dataset["context"], "query": dataset["question"], "title": dataset["title"]}
     )
