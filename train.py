@@ -45,6 +45,7 @@ def main():
     model_args, data_args = parser.parse_args_into_dataclasses()
     print(model_args.model_name_or_path)
 
+    #make_folds.py로 생성한 fold data 파일 불러오기
     fold1 = pd.read_csv('./fold1_test.csv')
     fold2 = pd.read_csv('./fold2_test.csv')
     fold3 = pd.read_csv('./fold3_test.csv')
@@ -59,6 +60,7 @@ def main():
 
     folds = [fold1, fold2, fold3, fold4, fold5]
 
+    #fold training
     for fold in range(1, 6):
         training_args = TrainingArguments(
             do_train=True,
@@ -360,9 +362,9 @@ def run_mrc(
     def compute_metrics(p: EvalPrediction):
         result = metric.compute(predictions=p.predictions, references=p.label_ids)
         result["eval_exact_match"] = result["exact_match"]
-        del result["exact_match"]
         result["eval_f1"] = result["f1"]
-        del result["f1"]
+        
+        del result['exact_match'], result["f1"]
         return result
 
     # Trainer 초기화
