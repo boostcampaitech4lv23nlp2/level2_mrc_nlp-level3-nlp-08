@@ -20,11 +20,7 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
-<<<<<<< HEAD
-from retrieval import BM25,TfidvRetrieval
-=======
 from retrieval import TfidfRetrieval,BM25
->>>>>>> origin/develop_bm25
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -114,11 +110,7 @@ def run_sparse_retrieval(
         
     # Query에 맞는 Passage들을 Retrieval 합니다.
     elif data_args.retrieval_choice=="tfidf":
-<<<<<<< HEAD
-        retriever = TfidvRetrieval(
-=======
         retriever = TfidfRetrieval(
->>>>>>> origin/develop_bm25
             tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
         )
     retriever.get_sparse_embedding()
@@ -200,7 +192,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            # return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
