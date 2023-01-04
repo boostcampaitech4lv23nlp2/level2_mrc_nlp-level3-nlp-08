@@ -1,0 +1,41 @@
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "my_analyzer": {
+          "type": "custom",
+          "tokenizer": "nori_tokenizer",
+          "decompound_mode": "mixed",
+          "filter": ["my_shingle"]
+        }
+      },
+      "filter": {
+        "my_shingle": {
+          "type": "shingle",
+          "min_shingle_size": 2,
+          "max_shingle_size": 4
+        }
+      }
+    },
+
+    "index": {
+      "similarity": {
+        "my_similarity": {
+          "type": "BM25",
+          "b": 0.75,
+          "k1": 1.5
+        }
+      }
+    }
+  },
+
+  "mappings": {
+    "properties": {
+      "document_text": {
+        "type": "text",
+        "analyzer": "my_analyzer",
+        "similarity": "my_similarity"
+      }
+    }
+  }
+}
