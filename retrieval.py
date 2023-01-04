@@ -13,11 +13,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from tqdm.auto import tqdm
 from rank_bm25 import BM25Okapi
 
+
 @contextmanager
 def timer(name):
     t0 = time.time()
     yield
     print(f"[{name}] done in {time.time() - t0:.3f} s")
+
 
 class Retrieval:
     def __init__(
@@ -51,17 +53,14 @@ class Retrieval:
         with open(os.path.join(data_path, context_path), "r", encoding="utf-8") as f:
             wiki = json.load(f)
 
-        self.contexts = list(
-            dict.fromkeys([v["text"] for v in wiki.values()])
-        )  # set 은 매번 순서가 바뀌므로
+        self.contexts = list(dict.fromkeys([v["text"] for v in wiki.values()]))  # set 은 매번 순서가 바뀌므로
 
         print(f"Lengths of unique contexts : {len(self.contexts)}")
         self.ids = list(range(len(self.contexts)))
         self.tokenize_fn = tokenize_fn
-        
-        self.p_embedding = None  # get_sparse_embedding()로 생성합니다
-        self.indexer = None  # build_faiss()로 생성합니다.        
 
+        self.p_embedding = None  # get_sparse_embedding()로 생성합니다
+        self.indexer = None  # build_faiss()로 생성합니다.
 
     def retrieve(
         self, query_or_dataset: Union[str, Dataset], topk: Optional[int] = 1
@@ -87,7 +86,7 @@ class Retrieval:
                 Ground Truth가 없는 Query (test) -> Retrieval한 Passage만 반환합니다.
         """
 
-        #assert self.p_embedding is not None, "get_sparse_embedding() 메소드를 먼저 수행해줘야합니다."
+        # assert self.p_embedding is not None, "get_sparse_embedding() 메소드를 먼저 수행해줘야합니다."
 
         if isinstance(query_or_dataset, str):
             doc_scores, doc_indices = self.get_relevant_doc(query_or_dataset, k=topk)
@@ -107,17 +106,13 @@ class Retrieval:
                 doc_scores, doc_indices = self.get_relevant_doc_bulk(
                     query_or_dataset["question"], k=topk
                 )
-            for idx, example in enumerate(
-                tqdm(query_or_dataset, desc="Sparse retrieval: ")
-            ):
+            for idx, example in enumerate(tqdm(query_or_dataset, desc="Sparse retrieval: ")):
                 tmp = {
                     # Query와 해당 id를 반환합니다.
                     "question": example["question"],
                     "id": example["id"],
                     # Retrieve한 Passage의 id, context를 반환합니다.
-                    "context": " ".join(
-                        [self.contexts[pid] for pid in doc_indices[idx]]
-                    ),
+                    "context": " ".join([self.contexts[pid] for pid in doc_indices[idx]]),
                 }
                 if "context" in example.keys() and "answers" in example.keys():
                     # validation 데이터를 사용하면 ground_truth context와 answer도 반환합니다.
@@ -130,13 +125,11 @@ class Retrieval:
 
     def get_sparse_embedding(self) -> NoReturn:
         raise NotImplementedError("embedding 함수를 작성해야한다")
-    
+
     def get_relevant_doc(self, query: str, k: Optional[int] = 1) -> Tuple[List, List]:
         raise NotImplementedError("문장이 들어올 때 계산을 구현해야한다.")
-    
-    def get_relevant_doc_bulk(
-        self, queries: List, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+
+    def get_relevant_doc_bulk(self, queries: List, k: Optional[int] = 1) -> Tuple[List, List]:
         raise NotImplementedError("여러 문장이 들어올 때 계산을 구현해야한다")
 
     def build_faiss(self, num_clusters=64) -> NoReturn:
@@ -146,16 +139,14 @@ class Retrieval:
         self, query_or_dataset: Union[str, Dataset], topk: Optional[int] = 1
     ) -> Union[Tuple[List, List], pd.DataFrame]:
         pass
-    
-    def get_relevant_doc_faiss(
-        self, query: str, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+
+    def get_relevant_doc_faiss(self, query: str, k: Optional[int] = 1) -> Tuple[List, List]:
         pass
-    
-    def get_relevant_doc_bulk_faiss(
-        self, queries: List, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+
+    def get_relevant_doc_bulk_faiss(self, queries: List, k: Optional[int] = 1) -> Tuple[List, List]:
         pass
+
+
 class TfidfRetrieval(Retrieval):
     def __init__(
         self,
@@ -164,9 +155,11 @@ class TfidfRetrieval(Retrieval):
         context_path: Optional[str] = "wikipedia_documents.json",
     ) -> NoReturn:
         super().__init__(tokenize_fn, data_path, context_path)
-        
+
         self.tfidfv = TfidfVectorizer(
-            tokenizer=tokenize_fn, ngram_range=(1, 2), max_features=50000,
+            tokenizer=tokenize_fn,
+            ngram_range=(1, 2),
+            max_features=50000,
         )
 
     def get_sparse_embedding(self) -> NoReturn:
@@ -261,7 +254,7 @@ class TfidfRetrieval(Retrieval):
                 Ground Truth가 없는 Query (test) -> Retrieval한 Passage만 반환합니다.
         """
 
-        #assert self.p_embedding is not None, "get_sparse_embedding() 메소드를 먼저 수행해줘야합니다."
+        # assert self.p_embedding is not None, "get_sparse_embedding() 메소드를 먼저 수행해줘야합니다."
 
         if isinstance(query_or_dataset, str):
             doc_scores, doc_indices = self.get_relevant_doc(query_or_dataset, k=topk)
@@ -281,16 +274,14 @@ class TfidfRetrieval(Retrieval):
                 doc_scores, doc_indices = self.get_relevant_doc_bulk(
                     query_or_dataset["question"], k=topk
                 )
-            for idx, example in enumerate(
-                tqdm(query_or_dataset, desc="Sparse retrieval: ")
-            ):
+            for idx, example in enumerate(tqdm(query_or_dataset, desc="Sparse retrieval: ")):
                 tmp = {
                     # Query와 해당 id를 반환합니다.
                     "question": example["question"],
                     "id": example["id"],
                     # Retrieve한 Passage의 id, context를 반환합니다.
                     "context": " ".join(
-                        [self.contexts[pid] for pid in doc_indices[idx]] #topk문장 합치기
+                        [self.contexts[pid] for pid in doc_indices[idx]]  # topk문장 합치기
                     ),
                 }
 
@@ -331,9 +322,7 @@ class TfidfRetrieval(Retrieval):
         doc_indices = sorted_result.tolist()[:k]
         return doc_score, doc_indices
 
-    def get_relevant_doc_bulk(
-        self, queries: List, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+    def get_relevant_doc_bulk(self, queries: List, k: Optional[int] = 1) -> Tuple[List, List]:
 
         """
         Arguments:
@@ -344,7 +333,7 @@ class TfidfRetrieval(Retrieval):
         Note:
             vocab 에 없는 이상한 단어로 query 하는 경우 assertion 발생 (예) 뙣뙇?
         """
-        
+
         query_vec = self.tfidfv.transform(queries)
         assert (
             np.sum(query_vec) != 0
@@ -389,9 +378,7 @@ class TfidfRetrieval(Retrieval):
         assert self.indexer is not None, "build_faiss()를 먼저 수행해주세요."
 
         if isinstance(query_or_dataset, str):
-            doc_scores, doc_indices = self.get_relevant_doc_faiss(
-                query_or_dataset, k=topk
-            )
+            doc_scores, doc_indices = self.get_relevant_doc_faiss(query_or_dataset, k=topk)
             print("[Search query]\n", query_or_dataset, "\n")
 
             for i in range(topk):
@@ -407,20 +394,14 @@ class TfidfRetrieval(Retrieval):
             total = []
 
             with timer("query faiss search"):
-                doc_scores, doc_indices = self.get_relevant_doc_bulk_faiss(
-                    queries, k=topk
-                )
-            for idx, example in enumerate(
-                tqdm(query_or_dataset, desc="Sparse retrieval: ")
-            ):
+                doc_scores, doc_indices = self.get_relevant_doc_bulk_faiss(queries, k=topk)
+            for idx, example in enumerate(tqdm(query_or_dataset, desc="Sparse retrieval: ")):
                 tmp = {
                     # Query와 해당 id를 반환합니다.
                     "question": example["question"],
                     "id": example["id"],
                     # Retrieve한 Passage의 id, context를 반환합니다.
-                    "context": " ".join(
-                        [self.contexts[pid] for pid in doc_indices[idx]]
-                    ),
+                    "context": " ".join([self.contexts[pid] for pid in doc_indices[idx]]),
                 }
                 if "context" in example.keys() and "answers" in example.keys():
                     # validation 데이터를 사용하면 ground_truth context와 answer도 반환합니다.
@@ -430,9 +411,7 @@ class TfidfRetrieval(Retrieval):
 
             return pd.DataFrame(total)
 
-    def get_relevant_doc_faiss(
-        self, query: str, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+    def get_relevant_doc_faiss(self, query: str, k: Optional[int] = 1) -> Tuple[List, List]:
 
         """
         Arguments:
@@ -455,9 +434,7 @@ class TfidfRetrieval(Retrieval):
 
         return D.tolist()[0], I.tolist()[0]
 
-    def get_relevant_doc_bulk_faiss(
-        self, queries: List, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+    def get_relevant_doc_bulk_faiss(self, queries: List, k: Optional[int] = 1) -> Tuple[List, List]:
 
         """
         Arguments:
@@ -479,18 +456,20 @@ class TfidfRetrieval(Retrieval):
 
         return D.tolist(), I.tolist()
 
+
 class BM25(Retrieval):
     def __init__(
-        self, 
+        self,
         tokenize_fn,
-        data_path: Optional[str] = "../data/", 
-        context_path: Optional[str] = "wikipedia_documents.json"
+        data_path: Optional[str] = "../data/",
+        context_path: Optional[str] = "wikipedia_documents.json",
     ):
         super().__init__(tokenize_fn, data_path, context_path)
         self.bm25 = None
+
     def get_sparse_embedding(self):
         with timer("bm25 building"):
-            self.bm25 = BM25Okapi(self.contexts, tokenizer=self.tokenize_fn) 
+            self.bm25 = BM25Okapi(self.contexts, tokenizer=self.tokenize_fn)
 
     def get_relevant_doc(self, query: str, k: Optional[int] = 1) -> Tuple[List, List]:
         with timer("transform"):
@@ -502,13 +481,16 @@ class BM25(Retrieval):
         doc_indices = sorted_result.tolist()[:k]
         return doc_score, doc_indices
 
-    def get_relevant_doc_bulk(
-        self, queries: List, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+    def get_relevant_doc_bulk(self, queries: List, k: Optional[int] = 1) -> Tuple[List, List]:
         with timer("transform"):
             tokenized_queris = [self.tokenize_fn(query) for query in queries]
         with timer("query ex search"):
-            result = np.array([self.bm25.get_scores(tokenized_query) for tokenized_query in tqdm(tokenized_queris)])
+            result = np.array(
+                [
+                    self.bm25.get_scores(tokenized_query)
+                    for tokenized_query in tqdm(tokenized_queris)
+                ]
+            )
 
         doc_scores = []
         doc_indices = []
@@ -519,15 +501,12 @@ class BM25(Retrieval):
         return doc_scores, doc_indices
 
 
-    
 if __name__ == "__main__":
 
     import argparse
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument(
-        "--dataset_name", metavar="./data/train_dataset", type=str, help=""
-    )
+    parser.add_argument("--dataset_name", metavar="./data/train_dataset", type=str, help="")
     parser.add_argument(
         "--model_name_or_path",
         metavar="bert-base-multilingual-cased",
@@ -535,9 +514,7 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument("--data_path", metavar="./data", type=str, help="")
-    parser.add_argument(
-        "--context_path", metavar="wikipedia_documents", type=str, help=""
-    )
+    parser.add_argument("--context_path", metavar="wikipedia_documents", type=str, help="")
     parser.add_argument("--use_faiss", metavar=False, type=bool, help="")
 
     args = parser.parse_args()
@@ -555,7 +532,10 @@ if __name__ == "__main__":
 
     from transformers import AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=False,)
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.model_name_or_path,
+        use_fast=False,
+    )
 
     retriever = SparseRetrieval(
         tokenize_fn=tokenizer.tokenize,
@@ -589,5 +569,3 @@ if __name__ == "__main__":
 
         with timer("single query by exhaustive search"):
             scores, indices = retriever.retrieve(query)
-
-            

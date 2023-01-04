@@ -1,8 +1,11 @@
 import logging
 import os
 import sys
-from typing import NoReturn
 import pandas as pd
+import wandb
+import pickle
+
+from typing import NoReturn
 from arguments import DataTrainingArguments, ModelArguments
 from datasets import DatasetDict, load_from_disk, load_metric
 from trainer_qa import QuestionAnsweringTrainer
@@ -17,7 +20,7 @@ from transformers import (
     set_seed,
 )
 
-import wandb
+
 from utils_qa import check_no_error, postprocess_qa_predictions
 
 logger = logging.getLogger(__name__)
@@ -62,6 +65,7 @@ def main():
 
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
+
     if model_args.config_name is not None:
         print("modelname!:  ", model_args.config_name)
     else:
@@ -142,7 +146,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            # return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=not model_args.is_roberta,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -234,7 +238,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            # return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=not model_args.is_roberta,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 

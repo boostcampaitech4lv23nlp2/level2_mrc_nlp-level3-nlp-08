@@ -22,22 +22,25 @@ from transformers import (
     set_seed,
 )
 
+BM25_USED = False
+
 
 def main():
 
     set_seed(42)
 
     batch_size = 16
-    load_weight_path = "./best_model_aug/colbert_epoch5.pth"
+    load_weight_path = "./best_model_aug/colbert_epoch10.pth"
     data_path = "../data/train_dataset"
-    lr = 4e-5
+
+    lr = 4e-6
     args = TrainingArguments(
         output_dir="dense_retrieval",
         evaluation_strategy="epoch",
         learning_rate=lr,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        num_train_epochs=3,
+        num_train_epochs=6,
         weight_decay=0.01,
     )
 
@@ -47,11 +50,22 @@ def main():
     datasets = load_from_disk(data_path)
     train_dataset = pd.DataFrame(datasets["train"])
     train_dataset = train_dataset.reset_index(drop=True)
+
+    # bm25 hard negative
+    with open("bm25rank_dict.pickle", "rb") as fr:
+        bm25rank_dict = pickle.load(fr)
+
+    # hard nagative sample이 담긴 list
+    bm25rank_contexts = []
+    for idx, row in list(train_dataset.iterrows()):
+        bm25rank_contexts.append(bm25rank_dict[row["id"]][0])
+
     train_dataset = set_columns(train_dataset)
 
     print("dataset tokenizing.......")
     # 토크나이저
     train_context, train_query = tokenize_colbert(train_dataset, tokenizer, corpus="both")
+    train_bm25 = tokenize_colbert(bm25rank_contexts, tokenizer, corpus="bm25_hard")
 
     train_dataset = TensorDataset(
         train_context["input_ids"],
@@ -60,6 +74,9 @@ def main():
         train_query["input_ids"],
         train_query["attention_mask"],
         train_query["token_type_ids"],
+        train_bm25["input_ids"],
+        train_bm25["attention_mask"],
+        train_bm25["token_type_ids"],
     )
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -136,9 +153,16 @@ def train(args, dataset, model):
                 "token_type_ids": batch[5],
             }
 
+            n_inputs = {
+                "input_ids": batch[6],
+                "attention_mask": batch[7],
+                "token_type_ids": batch[8],
+            }
             # outputs with similiarity score
-            outputs = model(p_inputs, q_inputs)
-
+            if BM25_USED:
+                outputs = model(p_inputs, q_inputs, n_inputs)
+            else:
+                outputs = model(p_inputs, q_inputs, None)
             # target: position of positive samples = diagonal element
             targets = torch.arange(0, outputs.shape[0]).long()
             if torch.cuda.is_available():
@@ -156,7 +180,7 @@ def train(args, dataset, model):
             torch.cuda.empty_cache()
         final_loss = total_loss / len(dataset)
         print("total_loss :", final_loss)
-        torch.save(model.state_dict(), f"best_model/colbert_epoch{epoch+1}.pth")
+        torch.save(model.state_dict(), f"best_model/compare_colbert_epoch{epoch+1}.pth")
 
     return model
 

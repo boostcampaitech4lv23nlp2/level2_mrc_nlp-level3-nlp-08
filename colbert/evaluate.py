@@ -10,16 +10,17 @@ import sys
 from typing import Callable, Dict, List, NoReturn, Tuple
 import torch
 import numpy as np
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, set_seed
 from datasets import load_from_disk
 
-
 def main():
-    epoch = 9
+    epoch = 10
     MODEL_NAME = "klue/bert-base"
-
+    set_seed(42)
     datasets = load_from_disk("../data/train_dataset")
     val_dataset = pd.DataFrame(datasets["validation"])
+    
+
     val_dataset = val_dataset.reset_index(drop=True)
     val_dataset = set_columns(val_dataset)
 
@@ -29,7 +30,7 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    model.load_state_dict(torch.load(f"./best_model_aug/colbert_epoch{epoch}.pth"))
+    model.load_state_dict(torch.load(f"./best_model_aug/colbert_epoch10.pth"))
 
     print("opening wiki passage...")
     with open("../data/wikipedia_documents.json", "r", encoding="utf-8") as f:
@@ -75,7 +76,7 @@ def main():
     print(rank.size())
     torch.save(rank, f"./rank/rank_epoch{epoch}.pth")
 
-    k = 10
+    k = 5
     score = 0
 
     for idx in range(length):
