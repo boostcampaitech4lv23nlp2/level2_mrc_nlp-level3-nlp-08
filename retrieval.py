@@ -24,7 +24,7 @@ class Retrieval:
         self,
         tokenize_fn,
         data_path: Optional[str] = "../data/",
-        context_path: Optional[str] = "wikipedia_documents.json",
+        context_path: Optional[str] = "wikipedia_documnets.json",
     ) -> NoReturn:
 
         """
