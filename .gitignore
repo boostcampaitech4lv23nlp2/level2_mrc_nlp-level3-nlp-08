@@ -9,5 +9,6 @@ outputs
 playground
 colbert/best_model/*
 colbert/best_model_ori/*
+colbert/best_model*
 colbert/rank/*
 colbert/retriever_infer/*

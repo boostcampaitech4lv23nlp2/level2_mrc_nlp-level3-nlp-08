@@ -22,6 +22,10 @@ class ModelArguments:
         default=None,
         metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
+    retrieval_ColBERT_path: str = field(
+        default="colbert/best_model_aug/colbert_epoch5.pth",  # ColBERT, bm25, tfidf
+        metadata={"help": "choice retrieval model ColBERT_path"},
+    )
 
 
 @dataclass
@@ -78,7 +82,7 @@ class DataTrainingArguments:
         default=64, metadata={"help": "Define how many clusters to use for faiss."}
     )
     top_k_retrieval: int = field(
-        default=1,
+        default=10,
         metadata={"help": "Define how many top-k passages to retrieve based on similarity."},
     )
     use_faiss: bool = field(default=False, metadata={"help": "Whether to build with faiss"})

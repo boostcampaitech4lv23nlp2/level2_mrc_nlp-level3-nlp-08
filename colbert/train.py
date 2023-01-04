@@ -22,24 +22,29 @@ from transformers import (
     set_seed,
 )
 
+
 def main():
 
     set_seed(42)
+
     batch_size = 16
+    load_weight_path = "./best_model_aug/colbert_epoch5.pth"
+    data_path = "../data/train_dataset"
+    lr = 4e-5
     args = TrainingArguments(
         output_dir="dense_retrieval",
         evaluation_strategy="epoch",
-        learning_rate=2e-5,
+        learning_rate=lr,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        num_train_epochs=12,
+        num_train_epochs=3,
         weight_decay=0.01,
     )
 
     MODEL_NAME = "klue/bert-base"
     tokenizer = load_tokenizer(MODEL_NAME)
 
-    datasets = load_from_disk("../data/wiki_korQuAD_aug_dataset")
+    datasets = load_from_disk(data_path)
     train_dataset = pd.DataFrame(datasets["train"])
     train_dataset = train_dataset.reset_index(drop=True)
     train_dataset = set_columns(train_dataset)
@@ -61,6 +66,9 @@ def main():
 
     model = ColbertModel.from_pretrained(MODEL_NAME)
     model.resize_token_embeddings(tokenizer.vocab_size + 2)
+
+    if load_weight_path:
+        model.load_state_dict(torch.load(load_weight_path))
     model.to(device)
 
     print("model train...")

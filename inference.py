@@ -89,6 +89,7 @@ def main():
             print("retriever : USE ColBERT")
             datasets = run_colbert_retrieval(
                 datasets,
+                model_args,
                 training_args,
                 None,
                 data_args.top_k_retrieval,
@@ -130,7 +131,8 @@ def run_sparse_retrieval(
         df = retriever.retrieve_faiss(datasets["validation"], topk=data_args.top_k_retrieval)
     else:
         df = retriever.retrieve(datasets["validation"], topk=data_args.top_k_retrieval)
-
+    df.to_csv("bm25_rank.csv")
+    breakpoint()
     # test data 에 대해선 정답이 없으므로 id question context 로만 데이터셋이 구성됩니다.
     if training_args.do_predict:
         f = Features(

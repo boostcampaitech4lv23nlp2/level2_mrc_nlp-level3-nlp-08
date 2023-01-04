@@ -15,7 +15,7 @@ from datasets import load_from_disk
 
 
 def main():
-    epoch = 5
+    epoch = 9
     MODEL_NAME = "klue/bert-base"
 
     datasets = load_from_disk("../data/train_dataset")
@@ -29,7 +29,7 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    model.load_state_dict(torch.load(f"./best_model/colbert_epoch{epoch}.pth"))
+    model.load_state_dict(torch.load(f"./best_model_aug/colbert_epoch{epoch}.pth"))
 
     print("opening wiki passage...")
     with open("../data/wikipedia_documents.json", "r", encoding="utf-8") as f:

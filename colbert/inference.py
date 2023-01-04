@@ -21,8 +21,8 @@ from .model import *
 # baseline : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
 
 
-def run_colbert_retrieval(datasets, training_args, load_rank_path=None, top_k=10):
-    test_dataset = datasets["validation"].flatten_indices().to_pandas()
+def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=None, top_k=10):
+    test_dataset = datasets["train"].flatten_indices().to_pandas()
     MODEL_NAME = "klue/bert-base"
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -36,7 +36,7 @@ def run_colbert_retrieval(datasets, training_args, load_rank_path=None, top_k=10
 
     model.to(device)
 
-    model.load_state_dict(torch.load("colbert/best_model/colbert_epoch5.pth"))
+    model.load_state_dict(torch.load(model_args.retrieval_ColBERT_path))
 
     print("opening wiki passage...")
     with open("./data/wikipedia_documents.json", "r", encoding="utf-8") as f:
@@ -88,7 +88,7 @@ def run_colbert_retrieval(datasets, training_args, load_rank_path=None, top_k=10
         passage = ""
         for i in range(top_k):
             passage += context[rank[idx][i]]
-            passage += " "
+            passage += "$%$"
         passages.append(passage)
 
     # test data 에 대해선 정답이 없으므로 id question context 로만 데이터셋이 구성됩니다.
@@ -129,6 +129,6 @@ def run_colbert_retrieval(datasets, training_args, load_rank_path=None, top_k=10
         )
     else:
         raise ValueError
-
+    df.to_csv("colbert_rank")
     complete_datasets = DatasetDict({"validation": Dataset.from_pandas(df, features=f)})
     return complete_datasets
