@@ -91,7 +91,7 @@ class DataTrainingArguments:
         default=False, metadata={"help": "Whether to build with faiss"}
     )
     retrieval_choice: str =field(
-        default="bm25",
+        default="elastic",
         metadata={
             "help": "choice retrieval algorithms"
         },

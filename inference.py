@@ -20,6 +20,7 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
+from elastic_retrieval import elasticRetrieval
 from retrieval import TfidfRetrieval,BM25
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
@@ -113,7 +114,14 @@ def run_sparse_retrieval(
         retriever = TfidfRetrieval(
             tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
         )
-    retriever.get_sparse_embedding()
+
+    elif data_args.retrieval_choice=="elastic":
+        retriever=elasticRetrieval()
+    
+    if data_args.retrieval_choice=="elastic":
+        pass
+    else:
+        retriever.get_sparse_embedding()
 
     if data_args.use_faiss:
         retriever.build_faiss(num_clusters=data_args.num_clusters)
@@ -162,8 +170,8 @@ def run_mrc(
     tokenizer,
     model,
 ) -> NoReturn:
-    print(datasets["validation"])
-    breakpoint()
+    #print(datasets["validation"])
+
     # eval 혹은 prediction에서만 사용함
     column_names = datasets["validation"].column_names
 
