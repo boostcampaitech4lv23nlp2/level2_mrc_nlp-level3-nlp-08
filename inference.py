@@ -20,8 +20,9 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
-from retrieval import TfidfRetrieval,BM25
+from retrieval import TfidfRetrieval, BM25
 from trainer_qa import QuestionAnsweringTrainer
+from colbert.inference import run_colbert_retrieval
 from transformers import (
     AutoConfig,
     AutoModelForQuestionAnswering,
@@ -33,6 +34,7 @@ from transformers import (
     set_seed,
 )
 from utils_qa import check_no_error, postprocess_qa_predictions
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +43,7 @@ def main():
     # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
     # --help flag 를 실행시켜서 확인할 수 도 있습니다.
 
-    parser = HfArgumentParser(
-        (ModelArguments, DataTrainingArguments, TrainingArguments)
-    )
+    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     training_args.do_train = True
@@ -63,21 +63,17 @@ def main():
 
     # 모델을 초기화하기 전에 난수를 고정합니다.
     set_seed(training_args.seed)
-    #dataset_name="../data/train_dataset"
+    # dataset_name="../data/train_dataset"
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
 
     # AutoConfig를 이용하여 pretrained model 과 tokenizer를 불러옵니다.
     # argument로 원하는 모델 이름을 설정하면 옵션을 바꿀 수 있습니다.
     config = AutoConfig.from_pretrained(
-        model_args.config_name
-        if model_args.config_name
-        else model_args.model_name_or_path,
+        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
     )
     tokenizer = AutoTokenizer.from_pretrained(
-        model_args.tokenizer_name
-        if model_args.tokenizer_name
-        else model_args.model_name_or_path,
+        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         use_fast=True,
     )
     model = AutoModelForQuestionAnswering.from_pretrained(
@@ -87,10 +83,25 @@ def main():
     )
 
     # True일 경우 : run passage retrieval
+
     if data_args.eval_retrieval:
-        datasets = run_sparse_retrieval(
-            tokenizer.tokenize, datasets, training_args, data_args,
-        )
+        if data_args.retrieval_choice == "ColBERT":
+            print("retriever : USE ColBERT")
+            datasets = run_colbert_retrieval(
+                datasets,
+                model_args,
+                training_args,
+                None,
+                data_args.top_k_retrieval,
+            )
+        else:
+            print("retriever : USE sparse retriever")
+            datasets = run_sparse_retrieval(
+                tokenizer.tokenize,
+                datasets,
+                training_args,
+                data_args,
+            )
 
     # eval or predict mrc model
     if training_args.do_eval or training_args.do_predict:
@@ -105,11 +116,11 @@ def run_sparse_retrieval(
     data_path: str = "../data",
     context_path: str = "wikipedia_documents.json",
 ) -> DatasetDict:
-    if data_args.retrieval_choice=="bm25":
+    if data_args.retrieval_choice == "bm25":
         retriever = BM25(tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path)
-        
+
     # Query에 맞는 Passage들을 Retrieval 합니다.
-    elif data_args.retrieval_choice=="tfidf":
+    elif data_args.retrieval_choice == "tfidf":
         retriever = TfidfRetrieval(
             tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
         )
@@ -117,12 +128,11 @@ def run_sparse_retrieval(
 
     if data_args.use_faiss:
         retriever.build_faiss(num_clusters=data_args.num_clusters)
-        df = retriever.retrieve_faiss(
-            datasets["validation"], topk=data_args.top_k_retrieval
-        )
+        df = retriever.retrieve_faiss(datasets["validation"], topk=data_args.top_k_retrieval)
     else:
         df = retriever.retrieve(datasets["validation"], topk=data_args.top_k_retrieval)
-
+    df.to_csv("bm25_rank.csv")
+    breakpoint()
     # test data 에 대해선 정답이 없으므로 id question context 로만 데이터셋이 구성됩니다.
     if training_args.do_predict:
         f = Features(
@@ -150,6 +160,7 @@ def run_sparse_retrieval(
                 "question": Value(dtype="string", id=None),
             }
         )
+        df = df.drop(columns=["original_context"])
     datasets = DatasetDict({"validation": Dataset.from_pandas(df, features=f)})
     return datasets
 
@@ -158,12 +169,11 @@ def run_mrc(
     data_args: DataTrainingArguments,
     training_args: TrainingArguments,
     model_args: ModelArguments,
-    datasets: DatasetDict, #Dataset.from_pandas(df, features=f) answer,context,id,question
+    datasets: DatasetDict,  # Dataset.from_pandas(df, features=f) answer,context,id,question
     tokenizer,
     model,
 ) -> NoReturn:
     print(datasets["validation"])
-    breakpoint()
     # eval 혹은 prediction에서만 사용함
     column_names = datasets["validation"].column_names
 
@@ -176,9 +186,7 @@ def run_mrc(
     pad_on_right = tokenizer.padding_side == "right"
 
     # 오류가 있는지 확인합니다.
-    last_checkpoint, max_seq_length = check_no_error(
-        data_args, training_args, datasets, tokenizer
-    )
+    last_checkpoint, max_seq_length = check_no_error(data_args, training_args, datasets, tokenizer)
 
     # Validation preprocessing / 전처리를 진행합니다.
     def prepare_validation_features(examples):
@@ -253,21 +261,16 @@ def run_mrc(
             output_dir=training_args.output_dir,
         )
         # Metric을 구할 수 있도록 Format을 맞춰줍니다.
-        formatted_predictions = [
-            {"id": k, "prediction_text": v} for k, v in predictions.items()
-        ]
+        formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
 
         if training_args.do_predict:
             return formatted_predictions
         elif training_args.do_eval:
             references = [
-                {"id": ex["id"], "answers": ex[answer_column_name]}
-                for ex in datasets["validation"]
+                {"id": ex["id"], "answers": ex[answer_column_name]} for ex in datasets["validation"]
             ]
 
-            return EvalPrediction(
-                predictions=formatted_predictions, label_ids=references
-            )
+            return EvalPrediction(predictions=formatted_predictions, label_ids=references)
 
     metric = load_metric("squad")
 
@@ -297,9 +300,7 @@ def run_mrc(
         )
 
         # predictions.json 은 postprocess_qa_predictions() 호출시 이미 저장됩니다.
-        print(
-            "No metric can be presented because there is no correct answer given. Job done!"
-        )
+        print("No metric can be presented because there is no correct answer given. Job done!")
 
     if training_args.do_eval:
         metrics = trainer.evaluate()
@@ -310,4 +311,5 @@ def run_mrc(
 
 
 if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     main()
