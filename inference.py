@@ -20,7 +20,7 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
-from retrieval import TfidfRetrieval,BM25
+from retrieval import TfidfRetrieval,BM25,ElasticRetrieval
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -113,6 +113,9 @@ def run_sparse_retrieval(
         retriever = TfidfRetrieval(
             tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
         )
+        
+    elif data_args.retrieval_choice=="elastic":
+        retriever = ElasticRetrieval(host='localhost', port='9200')
     retriever.get_sparse_embedding()
 
     if data_args.use_faiss:

@@ -60,11 +60,11 @@ class ElasticObject:
                 self.client.indices.delete(index=index_name)
 
             else:
-                return
+                return False
 
         self.client.indices.create(index=index_name, body=settings)
-
         print(f"Create an Index ({index_name})")
+        return True
 
     def get_indices(self):
         indices = list(self.client.indices.get_alias().keys())
@@ -86,7 +86,7 @@ class ElasticObject:
     def insert_data(
         self,
         index_name: str,
-        data_path: str = "../data/deduplication_wikipedia_documents.json",
+        data_path: str = "../data/wikipedia_documents.json",
     ):
         """_summary_
 
@@ -100,14 +100,12 @@ class ElasticObject:
 
         docs = []
         print("Data Loding...")
-        for k, v in data.items():
+        for i, v in enumerate(data.values()):
             doc = {
                 "_index": index_name,
                 "_type": "_doc",
-                "_id": k,
-                "document_id": v["document_id"],
+                "_id": i,
                 "text": v["text"],
-                "corpus_source": v["corpus_source"],
                 "title": v["title"],
             }
 
@@ -129,6 +127,13 @@ class ElasticObject:
         self.client.delete(index=index_name, id=doc_id)
 
         print(f"Deleted {doc_id} document.")
+        
+    def init_index(self, index_name: str):
+        if self.client.indices.exists(index=index_name):
+            self.delete_index(index_name=index_name)
+            
+        self.create_index(index_name=index_name)
+        print(f"Initialization...({index_name})")
 
     def document_count(self, index_name: str):
 
@@ -139,15 +144,9 @@ class ElasticObject:
 
         body = {"query": {"bool": {"must": [{"match": {"text": question}}]}}}
 
-        responses = self.client.search(index=index_name, body=body, size=topk)["hits"][
-            "hits"
-        ]
-        outputs = [
-            {"text": res["_source"]["text"], "score": res["_score"]}
-            for res in responses
-        ]
+        responses = self.client.search(index=index_name, body=body, size=topk)["hits"]["hits"]
 
-        return outputs
+        return responses
 
 
 if __name__ == "__main__":
@@ -158,7 +157,7 @@ if __name__ == "__main__":
     es.delete_index("wiki_docs")
     es.create_index("wiki_docs")
     es.insert_data("wiki_docs")
-    es.document_count("wiki_docs")
+    print(es.document_count("wiki_docs"))
 
     outputs = es.search("wiki_docs", "소백산맥의 동남부에 위치한 지역은?")
 

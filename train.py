@@ -17,6 +17,7 @@ from transformers import (
     set_seed,
 )
 from utils_qa import check_no_error, postprocess_qa_predictions
+import wandb
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +30,20 @@ def main():
         (ModelArguments, DataTrainingArguments, TrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    wandb.init(
+        project="Hyunsoo",
+        name="ELECTRA-Aug-Train",
+        entity="nlp-08-mrc",
+        config=training_args,
+    )
+    
     print(model_args.model_name_or_path)
+    print(training_args)
 
     # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
-    # training_args.per_device_train_batch_size = 4
-    # print(training_args.per_device_train_batch_size)
+    training_args.save_total_limit = 2
+    training_args.report_to = ["wandb"]
+    training_args.per_device_train_batch_size = 32
 
     print(f"model is from {model_args.model_name_or_path}")
     print(f"data is from {data_args.dataset_name}")
@@ -79,6 +89,7 @@ def main():
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
         config=config,
     )
+    wandb.watch(model)
 
     print(
         
