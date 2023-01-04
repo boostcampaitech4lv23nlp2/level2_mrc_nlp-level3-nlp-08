@@ -2,12 +2,12 @@ import logging
 import os
 import sys
 import pandas as pd
+import json
 import wandb
-import pickle
-
 from typing import NoReturn
+
 from arguments import DataTrainingArguments, ModelArguments
-from datasets import DatasetDict, load_from_disk, load_metric
+from datasets import DatasetDict, load_from_disk, load_metric, Dataset
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -19,8 +19,6 @@ from transformers import (
     TrainingArguments,
     set_seed,
 )
-
-
 from utils_qa import check_no_error, postprocess_qa_predictions
 
 logger = logging.getLogger(__name__)
@@ -29,23 +27,17 @@ logger = logging.getLogger(__name__)
 def main():
     # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
     # --help flag 를 실행시켜서 확인할 수 도 있습니다.
+
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-    wandb.init(
-        project="sglee_retriever_test",
-        name="retriever_test",
-        entity="nlp-08-mrc",
-        config=training_args,
-    )
-
-    training_args.save_total_limit = 2
-    training_args.report_to = ["wandb"]
-    training_args.per_device_train_batch_size = 32
     print(model_args.model_name_or_path)
 
     # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
-
+    # training_args.per_device_train_batch_size = 16
     # print(training_args.per_device_train_batch_size)
+    # training_args.num_train_epochs=53
+    # training_args.learning_rate=9e-6
+    # print("learning_rate: ",training_args.learning_rate)
 
     print(f"model is from {model_args.model_name_or_path}")
     print(f"data is from {data_args.dataset_name}")
@@ -62,7 +54,6 @@ def main():
 
     # 모델을 초기화하기 전에 난수를 고정합니다.
     set_seed(training_args.seed)
-
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
 
@@ -85,9 +76,8 @@ def main():
         # 'use_fast' argument를 True로 설정할 경우 rust로 구현된 tokenizer를 사용할 수 있습니다.
         # False로 설정할 경우 python으로 구현된 tokenizer를 사용할 수 있으며,
         # rust version이 비교적 속도가 빠릅니다.
-        use_fast=True,
+        # use_fast=True,
     )
-
     model = AutoModelForQuestionAnswering.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -102,6 +92,7 @@ def main():
         type(model),
     )
 
+    wandb.watch(model)
     # do_train mrc model 혹은 do_eval mrc model
     if training_args.do_train or training_args.do_eval:
         run_mrc(data_args, training_args, model_args, datasets, tokenizer, model)
@@ -115,6 +106,12 @@ def run_mrc(
     tokenizer,
     model,
 ) -> NoReturn:
+    training_args.save_total_limit = 3
+    # training_args.eval_steps=500
+    # training_args.evaluation_strategy='steps'
+    # training_args.load_best_model_at_end = True
+    # training_args.metric_for_best_model='em'
+    training_args.report_to = ["wandb"]
 
     # dataset을 전처리합니다.
     # training과 evaluation에서 사용되는 전처리는 아주 조금 다른 형태를 가집니다.
@@ -308,8 +305,6 @@ def run_mrc(
     metric = load_metric("squad")
 
     def compute_metrics(p: EvalPrediction):
-        pd.DataFrame(p.predictions).to_csv("pred.csv")
-        pd.DataFrame(p.label_ids).to_csv("label.csv")
         return metric.compute(predictions=p.predictions, references=p.label_ids)
 
     # Trainer 초기화
@@ -366,5 +361,6 @@ def run_mrc(
 
 
 if __name__ == "__main__":
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    # TODO
+    wandb.init(project="YOUR_PROJECT", name="pretrain_more", entity="nlp-08-mrc")
     main()
