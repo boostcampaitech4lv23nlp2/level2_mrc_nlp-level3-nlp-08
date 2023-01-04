@@ -15,3 +15,11 @@ final_3
 final_4
 final_4_2
 final_4_3
+playground
+colbert/best_model/*
+colbert/best_model_ori/*
+colbert/best_model*
+colbert/rank/*
+colbert/retriever_infer/*
+colbert/inferecne_colbert_rank.pth
+

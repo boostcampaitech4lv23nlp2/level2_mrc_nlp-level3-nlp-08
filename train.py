@@ -35,11 +35,11 @@ def main():
     print(model_args.model_name_or_path)
 
     # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
-    training_args.per_device_train_batch_size = 16
-    print(training_args.per_device_train_batch_size)
-    training_args.num_train_epochs=53
-    training_args.learning_rate=9e-6
-    print("learning_rate: ",training_args.learning_rate)
+    #training_args.per_device_train_batch_size = 16
+    #print(training_args.per_device_train_batch_size)
+    #training_args.num_train_epochs=53
+    #training_args.learning_rate=9e-6
+    #print("learning_rate: ",training_args.learning_rate)
 
     print(f"model is from {model_args.model_name_or_path}")
     print(f"data is from {data_args.dataset_name}")
