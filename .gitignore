@@ -12,3 +12,5 @@ colbert/best_model_ori/*
 colbert/best_model*
 colbert/rank/*
 colbert/retriever_infer/*
+colbert/inferecne_colbert_rank.pth
+

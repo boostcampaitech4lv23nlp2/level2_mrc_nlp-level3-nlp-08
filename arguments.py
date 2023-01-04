@@ -23,7 +23,7 @@ class ModelArguments:
         metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
     retrieval_ColBERT_path: str = field(
-        default="colbert/best_model_aug/colbert_epoch5.pth",  # ColBERT, bm25, tfidf
+        default="colbert/best_model_aug/colbert_epoch10.pth",  # ColBERT, bm25, tfidf
         metadata={"help": "choice retrieval model ColBERT_path"},
     )
 

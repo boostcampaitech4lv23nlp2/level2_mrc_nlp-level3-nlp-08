@@ -22,7 +22,7 @@ from .model import *
 
 
 def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=None, top_k=10):
-    test_dataset = datasets["train"].flatten_indices().to_pandas()
+    test_dataset = datasets["validation"].flatten_indices().to_pandas()
     MODEL_NAME = "klue/bert-base"
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -78,7 +78,7 @@ def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=No
         rank = torch.argsort(dot_prod_scores, dim=1, descending=True).squeeze()
         print(dot_prod_scores)
         print(rank)
-        torch.save(rank, "colbert/retriever_infer/inferecne_colbert_rank.pth")
+        torch.save(rank, "colbert/inferecne_colbert_rank.pth")
     print(rank.size())
     print(length)
 
@@ -88,7 +88,7 @@ def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=No
         passage = ""
         for i in range(top_k):
             passage += context[rank[idx][i]]
-            passage += "$%$"
+            passage += " "
         passages.append(passage)
 
     # test data 에 대해선 정답이 없으므로 id question context 로만 데이터셋이 구성됩니다.
@@ -129,6 +129,5 @@ def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=No
         )
     else:
         raise ValueError
-    df.to_csv("colbert_rank")
     complete_datasets = DatasetDict({"validation": Dataset.from_pandas(df, features=f)})
     return complete_datasets
