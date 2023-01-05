@@ -58,6 +58,17 @@ def tokenize_colbert(dataset, tokenizer, corpus):
 
         return tokenized_context
 
+    elif corpus == "bm25_hard":
+        preprocessed_context = []
+        for context in dataset:
+            preprocessed_context.append("[D] " + context)
+        tokenized_context = tokenizer(
+            preprocessed_context,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=True,
+        )
+        return tokenized_context
     # for train
     else:
         preprocessed_query = []

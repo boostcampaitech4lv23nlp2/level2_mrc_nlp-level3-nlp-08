@@ -21,22 +21,9 @@ from .model import *
 # baseline : https://github.com/boostcampaitech3/level2-mrc-level2-nlp-11
 
 
-def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=None, top_k=10):
+def run_colbert_retrieval(datasets, model_args, training_args, top_k=10):
     test_dataset = datasets["validation"].flatten_indices().to_pandas()
     MODEL_NAME = "klue/bert-base"
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    model_config = AutoConfig.from_pretrained(MODEL_NAME)
-    special_tokens = {"additional_special_tokens": ["[Q]", "[D]"]}
-    ret_tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    ret_tokenizer.add_special_tokens(special_tokens)
-    model = ColbertModel.from_pretrained(MODEL_NAME)
-    model.resize_token_embeddings(ret_tokenizer.vocab_size + 2)
-
-    model.to(device)
-
-    model.load_state_dict(torch.load(model_args.retrieval_ColBERT_path))
 
     print("opening wiki passage...")
     with open("./data/wikipedia_documents.json", "r", encoding="utf-8") as f:
@@ -49,11 +36,30 @@ def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=No
     mrc_ids = test_dataset["id"]
     length = len(test_dataset)
 
-    if load_rank_path:
+    if model_args.ColBERT_rank_path:
+        load_rank_path = model_args.ColBERT_rank_path
         print("retriever : load rank")
-        rank = torch.load(load_rank_path)
+        if training_args.do_eval:
+            rank = torch.load(f"{load_rank_path}_eval.pth")
+        else:
+            print(f"{load_rank_path}_predict.pth")
+            rank = torch.load(f"{load_rank_path}_predict.pth")
     else:
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        model_config = AutoConfig.from_pretrained(MODEL_NAME)
+        special_tokens = {"additional_special_tokens": ["[Q]", "[D]"]}
+        ret_tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        ret_tokenizer.add_special_tokens(special_tokens)
+        model = ColbertModel.from_pretrained(MODEL_NAME)
+        model.resize_token_embeddings(ret_tokenizer.vocab_size + 2)
+
+        model.to(device)
+
+        model.load_state_dict(torch.load(model_args.retrieval_ColBERT_path))
+
         batched_p_embs = []
+
         with torch.no_grad():
             model.eval
 
@@ -78,7 +84,11 @@ def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=No
         rank = torch.argsort(dot_prod_scores, dim=1, descending=True).squeeze()
         print(dot_prod_scores)
         print(rank)
-        torch.save(rank, "colbert/inferecne_colbert_rank.pth")
+        if training_args.do_eval:
+            torch.save(rank, f"{model_args.save_ColBERT_rank_path}_eval.pth")
+        else:
+
+            torch.save(rank, f"{model_args.save_ColBERT_rank_path}_predict.pth")
     print(rank.size())
     print(length)
 
@@ -129,5 +139,6 @@ def run_colbert_retrieval(datasets, model_args, training_args, load_rank_path=No
         )
     else:
         raise ValueError
+
     complete_datasets = DatasetDict({"validation": Dataset.from_pandas(df, features=f)})
     return complete_datasets
