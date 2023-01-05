@@ -20,6 +20,7 @@ from datasets import (
     load_from_disk,
     load_metric,
 )
+from transformers import AutoTokenizer, AutoModelForMaskedLM
 from retrieval import TfidfRetrieval, BM25
 from trainer_qa import QuestionAnsweringTrainer
 from colbert.inference import run_colbert_retrieval
@@ -91,7 +92,6 @@ def main():
                 datasets,
                 model_args,
                 training_args,
-                None,
                 data_args.top_k_retrieval,
             )
         else:
@@ -131,8 +131,6 @@ def run_sparse_retrieval(
         df = retriever.retrieve_faiss(datasets["validation"], topk=data_args.top_k_retrieval)
     else:
         df = retriever.retrieve(datasets["validation"], topk=data_args.top_k_retrieval)
-    df.to_csv("bm25_rank.csv")
-    breakpoint()
     # test data 에 대해선 정답이 없으므로 id question context 로만 데이터셋이 구성됩니다.
     if training_args.do_predict:
         f = Features(
@@ -200,7 +198,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=not model_args.is_roberta,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
