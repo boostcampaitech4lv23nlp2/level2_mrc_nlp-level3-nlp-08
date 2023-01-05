@@ -35,7 +35,7 @@ class DataTrainingArguments:
     """
 
     dataset_name: Optional[str] = field(
-        default="./data/train_dataset",  # wiki_korQuAD_aug_dataset",
+        default="../data/train_dataset",  # wiki_korQuAD_aug_dataset",
         metadata={"help": "The name of the dataset to use."},
     )
     overwrite_cache: bool = field(
