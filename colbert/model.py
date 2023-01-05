@@ -29,10 +29,14 @@ class ColbertModel(BertPreTrainedModel):
         self.init_weights()
         self.linear = nn.Linear(config.hidden_size, self.dim, bias=False)
 
-    def forward(self, p_inputs, q_inputs):
+    def forward(self, p_inputs, q_inputs, n_inputs):
         Q = self.query(**q_inputs)
         D = self.doc(**p_inputs)
-        return self.get_score(Q, D)
+        if n_inputs:
+            N = self.doc(**n_inputs)
+            return self.get_score(Q, D, N)
+        else:
+            return self.get_score(Q, D)
 
     def query(self, input_ids, attention_mask, token_type_ids):
         Q = self.bert(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)[0]
@@ -44,12 +48,15 @@ class ColbertModel(BertPreTrainedModel):
         D = self.linear(D)
         return torch.nn.functional.normalize(D, p=2, dim=2)
 
-    def get_score(self, Q, D, eval=False):
+    def get_score(self, Q, D, N=None, eval=False):
+        # hard negative N은 train에만 쓰임.
         if eval:
             if self.similarity_metric == "cosine":
                 final_score = torch.tensor([])
                 for D_batch in tqdm(D):
+                    D_batch = np.array(D_batch)
                     D_batch = torch.Tensor(D_batch).squeeze()
+                    print(D_batch.shape)
                     p_seqeunce_output = D_batch.transpose(
                         1, 2
                     )  # (batch_size,hidden_size,p_sequence_length)
@@ -70,7 +77,14 @@ class ColbertModel(BertPreTrainedModel):
         else:
             if self.similarity_metric == "cosine":
 
-                p_seqeunce_output = D.transpose(1, 2)  # (batch_size,hidden_size,p_sequence_length)
+                p_seqeunce_output = D.transpose(
+                    1, 2
+                )  # (batch_size, hidden_size, p_sequence_length)
+                if N:
+                    n_seqeunce_output = N.transpose(1, 2)
+                    p_seqeunce_output = torch.cat(
+                        [p_seqeunce_output, n_seqeunce_output], dim=0
+                    )  # (hard_negative_size, hidden_size, p_sequence_length)
                 q_sequence_output = Q.view(
                     Q.shape[0], 1, -1, self.dim
                 )  # (batch_size, 1, q_sequence_length, hidden_size)
