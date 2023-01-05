@@ -64,14 +64,14 @@ def main():
     for fold in range(1, 6):
         training_args = TrainingArguments(
             do_train=True,
-            output_dir="./models/train_dataset_5_fold" + str(fold),
+            output_dir="./models/train_dataset_5_fold_pretrain" + str(fold),
             overwrite_output_dir=True,
             evaluation_strategy="steps",
             per_device_train_batch_size=16,
             per_device_eval_batch_size=16,
             gradient_accumulation_steps=2,
-            learning_rate=1e-5,
-            num_train_epochs=8,
+            learning_rate=9e-6,
+            num_train_epochs=120,
             warmup_ratio=0.1,
             logging_strategy="steps",
             logging_steps=100,
@@ -123,14 +123,14 @@ def main():
             # 'use_fast' argument를 True로 설정할 경우 rust로 구현된 tokenizer를 사용할 수 있습니다.
             # False로 설정할 경우 python으로 구현된 tokenizer를 사용할 수 있으며,
             # rust version이 비교적 속도가 빠릅니다.
-            use_fast=True,
+            # use_fast=True,
         )
         model = AutoModelForQuestionAnswering.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
         )
-
+        model.resize_token_embeddings(len(tokenizer))
         print(
         
             type(training_args),
@@ -143,7 +143,7 @@ def main():
         # do_train mrc model 혹은 do_eval mrc model
         if training_args.do_train or training_args.do_eval:
             run = wandb.init(
-                project="kfold_exp",
+                project="kfold_exp_pretrain",
                 entity="nlp-08-mrc",
                 name="fold" + str(fold),
                 group="5_fold",
@@ -193,7 +193,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            # return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -285,7 +285,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            # return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
