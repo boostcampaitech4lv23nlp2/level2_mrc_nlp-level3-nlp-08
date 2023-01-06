@@ -152,16 +152,13 @@ class ElasticObject:
 if __name__ == "__main__":
 
     es = ElasticObject("localhost:9200")
-    es.create_index("wiki_docs")
-    es.create_index("wiki_docs")
-    es.delete_index("wiki_docs")
-    es.create_index("wiki_docs")
-    es.insert_data("wiki_docs")
-    print(es.document_count("wiki_docs"))
+    # es.create_index("wiki_docs")
+    # es.insert_data("wiki_docs")
+    # print(es.document_count("wiki_docs"))
 
     outputs = es.search("wiki_docs", "소백산맥의 동남부에 위치한 지역은?")
 
     for output in outputs:
-        print("doc:", output["text"])
-        print("score:", output["score"])
+        print("doc:", output['_source']["text"])
+        print("score:", output["_score"])
         print()

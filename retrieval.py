@@ -561,7 +561,7 @@ class ElasticRetrieval:
                     "question": example["question"],
                     "id": example["id"],
                     # Retrieve한 Passage의 id, context를 반환합니다.
-                    "context_id": doc_indices[idx],
+                    # "context_id": doc_indices[idx],
                     "context": " ".join(retrieved_context),  # 수정
                 }
                 if "context" in example.keys() and "answers" in example.keys():
@@ -576,7 +576,7 @@ class ElasticRetrieval:
     
     def get_sparse_embedding(self):
         with timer("elastic building..."):
-            indices = self.elastic_client.get_indices('wiki_docs')
+            indices = self.elastic_client.get_indices()
             print('Elastic indices :', indices)
             
     def get_relevant_doc(self, query: str, k: Optional[int] = 1) -> Tuple[List, List]:

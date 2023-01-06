@@ -30,20 +30,23 @@ def main():
         (ModelArguments, DataTrainingArguments, TrainingArguments)
     )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    
+    # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
+    training_args.save_total_limit = 2
+    training_args.report_to = ["wandb"]
+    training_args.per_device_train_batch_size = 32
+    training_args.num_train_epochs = 56
+    training_args.learning_rate = 9e-6
+    
     wandb.init(
         project="Hyunsoo",
-        name="ELECTRA-Aug-Train",
+        name="Multilin-BERT-2-fine-Train",
         entity="nlp-08-mrc",
         config=training_args,
     )
     
     print(model_args.model_name_or_path)
-    print(training_args)
-
-    # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
-    training_args.save_total_limit = 2
-    training_args.report_to = ["wandb"]
-    training_args.per_device_train_batch_size = 32
+    # print(training_args)
 
     print(f"model is from {model_args.model_name_or_path}")
     print(f"data is from {data_args.dataset_name}")

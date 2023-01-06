@@ -125,7 +125,6 @@ def run_sparse_retrieval(
         )
     else:
         df = retriever.retrieve(datasets["validation"], topk=data_args.top_k_retrieval)
-
     # test data 에 대해선 정답이 없으므로 id question context 로만 데이터셋이 구성됩니다.
     if training_args.do_predict:
         f = Features(
@@ -138,6 +137,7 @@ def run_sparse_retrieval(
 
     # train data 에 대해선 정답이 존재하므로 id question context answer 로 데이터셋이 구성됩니다.
     elif training_args.do_eval:
+        df = df.drop(columns=["original_context"])
         f = Features(
             {
                 "answers": Sequence(
@@ -166,7 +166,7 @@ def run_mrc(
     model,
 ) -> NoReturn:
     print(datasets["validation"])
-    breakpoint()
+    # breakpoint()
     # eval 혹은 prediction에서만 사용함
     column_names = datasets["validation"].column_names
 
