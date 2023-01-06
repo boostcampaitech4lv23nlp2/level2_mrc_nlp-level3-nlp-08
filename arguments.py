@@ -9,7 +9,7 @@ class ModelArguments:
     """
 
     model_name_or_path: str = field(
-        default="klue/bert-base",
+        default="monologg/koelectra-base-v3-discriminator",
         metadata={
             "help": "Path to pretrained model or model identifier from huggingface.co/models"
         },

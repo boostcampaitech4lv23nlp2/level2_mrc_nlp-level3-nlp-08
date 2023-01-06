@@ -21,7 +21,7 @@ from datasets import (
     load_metric,
 )
 from transformers import AutoTokenizer, AutoModelForMaskedLM
-from retrieval import TfidfRetrieval, BM25
+from retrieval import TfidfRetrieval, BM25, ElasticRetrieval
 from trainer_qa import QuestionAnsweringTrainer
 from colbert.inference import run_colbert_retrieval
 from transformers import (
@@ -124,6 +124,9 @@ def run_sparse_retrieval(
         retriever = TfidfRetrieval(
             tokenize_fn=tokenize_fn, data_path=data_path, context_path=context_path
         )
+        
+    elif data_args.retrieval_choice=="elastic":
+        retriever = ElasticRetrieval(host='localhost', port='9200')
     retriever.get_sparse_embedding()
 
     if data_args.use_faiss:
@@ -143,6 +146,7 @@ def run_sparse_retrieval(
 
     # train data 에 대해선 정답이 존재하므로 id question context answer 로 데이터셋이 구성됩니다.
     elif training_args.do_eval:
+        df = df.drop(columns=["original_context"])
         f = Features(
             {
                 "answers": Sequence(
@@ -172,6 +176,7 @@ def run_mrc(
     model,
 ) -> NoReturn:
     print(datasets["validation"])
+
     # eval 혹은 prediction에서만 사용함
     column_names = datasets["validation"].column_names
 

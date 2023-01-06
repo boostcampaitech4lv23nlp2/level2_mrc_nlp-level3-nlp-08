@@ -6,6 +6,7 @@ data.tar.gz
 .ipynb_checkpoints
 __pycache__
 outputs
+*.out
 *.json
 elastic_setting.py
 elastic_test.py
