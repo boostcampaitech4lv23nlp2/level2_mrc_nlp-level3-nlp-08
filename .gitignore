@@ -6,6 +6,12 @@ data.tar.gz
 .ipynb_checkpoints
 __pycache__
 outputs
+*.json
+elastic_setting.py
+elastic_test.py
+*.csv
+*.zip
+*.sh
 wandb
 pretrain
 moretrain
