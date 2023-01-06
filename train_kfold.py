@@ -6,8 +6,10 @@ import json
 import wandb
 from typing import NoReturn
 
+import pandas as pd
+
 from arguments import DataTrainingArguments, ModelArguments
-from datasets import DatasetDict, load_from_disk, load_metric, Dataset
+from datasets import DatasetDict, load_from_disk, load_metric,Dataset
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,
@@ -21,6 +23,19 @@ from transformers import (
 )
 from utils_qa import check_no_error, postprocess_qa_predictions
 
+from datasets import (
+    load_metric,
+    load_from_disk,
+    Dataset,
+    DatasetDict,
+    Features,
+    Sequence,
+    Value,
+    concatenate_datasets,
+)
+
+import wandb
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,39 +43,38 @@ def main():
     # 가능한 arguments 들은 ./arguments.py 나 transformer package 안의 src/transformers/training_args.py 에서 확인 가능합니다.
     # --help flag 를 실행시켜서 확인할 수 도 있습니다.
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    parser = HfArgumentParser(
+        (ModelArguments, DataTrainingArguments)
+    )
+    model_args, data_args = parser.parse_args_into_dataclasses()
     print(model_args.model_name_or_path)
 
     # [참고] argument를 manual하게 수정하고 싶은 경우에 아래와 같은 방식을 사용할 수 있습니다
-    # training_args.per_device_train_batch_size = 16
+    # training_args.per_device_train_batch_size = 4
     # print(training_args.per_device_train_batch_size)
-    # training_args.num_train_epochs=53
-    # training_args.learning_rate=9e-6
-    # print("learning_rate: ",training_args.learning_rate)
 
-    print(f"model is from {model_args.model_name_or_path}")
-    print(f"data is from {data_args.dataset_name}")
+        print(f"model is from {model_args.model_name_or_path}")
+        print(f"data is from {data_args.dataset_name}")
 
-    # logging 설정
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -    %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
+        # logging 설정
+        logging.basicConfig(
+            format="%(asctime)s - %(levelname)s - %(name)s -    %(message)s",
+            datefmt="%m/%d/%Y %H:%M:%S",
+            handlers=[logging.StreamHandler(sys.stdout)],
+        )
 
     # verbosity 설정 : Transformers logger의 정보로 사용합니다 (on main process only)
     logger.info("Training/evaluation parameters %s", training_args)
 
     # 모델을 초기화하기 전에 난수를 고정합니다.
     set_seed(training_args.seed)
+
     datasets = load_from_disk(data_args.dataset_name)
     print(datasets)
-
     if model_args.config_name is not None:
-        print("modelname!:  ", model_args.config_name)
-    else:
-        print("model!!", model_args.model_name_or_path)
+        print("modelname!:  ",model_args.config_name)
+    else: 
+        print("model!!",model_args.model_name_or_path)
     # AutoConfig를 이용하여 pretrained model 과 tokenizer를 불러옵니다.
     # argument로 원하는 모델 이름을 설정하면 옵션을 바꿀 수 있습니다.
     config = AutoConfig.from_pretrained(
@@ -76,7 +90,7 @@ def main():
         # 'use_fast' argument를 True로 설정할 경우 rust로 구현된 tokenizer를 사용할 수 있습니다.
         # False로 설정할 경우 python으로 구현된 tokenizer를 사용할 수 있으며,
         # rust version이 비교적 속도가 빠릅니다.
-        # use_fast=True,
+        use_fast=True,
     )
     model = AutoModelForQuestionAnswering.from_pretrained(
         model_args.model_name_or_path,
@@ -85,14 +99,14 @@ def main():
     )
 
     print(
-        type(training_args),
-        type(model_args),
-        type(datasets),
-        type(tokenizer),
-        type(model),
-    )
+        
+            type(training_args),
+            type(model_args),
+            type(datasets),
+            type(tokenizer),
+            type(model),
+        )
 
-    wandb.watch(model)
     # do_train mrc model 혹은 do_eval mrc model
     if training_args.do_train or training_args.do_eval:
         run_mrc(data_args, training_args, model_args, datasets, tokenizer, model)
@@ -106,11 +120,11 @@ def run_mrc(
     tokenizer,
     model,
 ) -> NoReturn:
-    training_args.save_total_limit = 3
-    # training_args.eval_steps=500
-    # training_args.evaluation_strategy='steps'
-    # training_args.load_best_model_at_end = True
-    # training_args.metric_for_best_model='em'
+    training_args.save_total_limit=3
+    #training_args.eval_steps=500
+    #training_args.evaluation_strategy='steps'
+    #training_args.load_best_model_at_end = True
+    #training_args.metric_for_best_model='em'
     training_args.report_to = ["wandb"]
 
     # dataset을 전처리합니다.
@@ -129,7 +143,9 @@ def run_mrc(
     pad_on_right = tokenizer.padding_side == "right"
 
     # 오류가 있는지 확인합니다.
-    last_checkpoint, max_seq_length = check_no_error(data_args, training_args, datasets, tokenizer)
+    last_checkpoint, max_seq_length = check_no_error(
+        data_args, training_args, datasets, tokenizer
+    )
 
     # Train preprocessing / 전처리를 진행합니다.
     def prepare_train_features(examples):
@@ -143,7 +159,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            return_token_type_ids=not model_args.is_roberta,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -235,7 +251,7 @@ def run_mrc(
             stride=data_args.doc_stride,
             return_overflowing_tokens=True,
             return_offsets_mapping=True,
-            return_token_type_ids=not model_args.is_roberta,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+            return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
@@ -292,20 +308,30 @@ def run_mrc(
             output_dir=training_args.output_dir,
         )
         # Metric을 구할 수 있도록 Format을 맞춰줍니다.
-        formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
+        formatted_predictions = [
+            {"id": k, "prediction_text": v} for k, v in predictions.items()
+        ]
         if training_args.do_predict:
             return formatted_predictions
 
         elif training_args.do_eval:
             references = [
-                {"id": ex["id"], "answers": ex[answer_column_name]} for ex in datasets["validation"]
+                {"id": ex["id"], "answers": ex[answer_column_name]}
+                for ex in datasets["validation"]
             ]
-            return EvalPrediction(predictions=formatted_predictions, label_ids=references)
+            return EvalPrediction(
+                predictions=formatted_predictions, label_ids=references
+            )
 
     metric = load_metric("squad")
 
     def compute_metrics(p: EvalPrediction):
-        return metric.compute(predictions=p.predictions, references=p.label_ids)
+        result = metric.compute(predictions=p.predictions, references=p.label_ids)
+        result["eval_exact_match"] = result["exact_match"]
+        result["eval_f1"] = result["f1"]
+        
+        del result['exact_match'], result["f1"]
+        return result
 
     # Trainer 초기화
     trainer = QuestionAnsweringTrainer(
@@ -347,7 +373,9 @@ def run_mrc(
                 writer.write(f"{key} = {value}\n")
 
         # State 저장
-        trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
+        trainer.state.save_to_json(
+            os.path.join(training_args.output_dir, "trainer_state.json")
+        )
 
     # Evaluation
     if training_args.do_eval:
@@ -361,6 +389,5 @@ def run_mrc(
 
 
 if __name__ == "__main__":
-    # TODO
-    wandb.init(project="YOUR_PROJECT", name="pretrain_more", entity="nlp-08-mrc")
+    wandb.init(project = "lhJoon_exp", name="pretrain_more", entity='nlp-08-mrc')
     main()
