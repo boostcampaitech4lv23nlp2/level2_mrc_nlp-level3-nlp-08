@@ -318,6 +318,14 @@ Soft Voting을 기반으로 총 합이 10이 되도록 하는 가중치를 분�
 |xlm-roberta-large|61.67|71.85|
 |KoELECTRA|57.5|63.11|
 
+<br>
+
+## Competition Result
+
+**Public & Private 1st**
+
+<img src='./assets/competition.png' width=800>
+
 
 
 
