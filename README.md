@@ -40,7 +40,7 @@ bash ./install/install_requirements.sh
 
 ## 저장소 구조
 
-```bash
+```
 .
 |-- README.md
 |
