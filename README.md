@@ -1,5 +1,8 @@
 # ODQA(Open Domain Question Answering)
 
+## [Wrap-up Report](https://harmless-direction-87c.notion.site/Wrap-Up-482fffa16b804d36823554598b5bccce)
+
+
 ## 소개
 
 지문이 주어진 상태에서 질의에 해당하는 답을 찾는 Task를 MRC(Machine Reading Comprehension)라고 한다.  
