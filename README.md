@@ -78,7 +78,18 @@ bash ./install/install_requirements.sh
 
 # 데이터 소개
 
-아래는 제공하는 데이터셋의 분포를 보여줍니다.
+## Competition Datasets (Retrieval)
+
+```bash
+./data/                        # 전체 데이터
+    ./wikipedia_documents.json # 위키피디아 문서 집합. retrieval을 위해 쓰이는 corpus.
+```
+
+총 56000개의 위키피디아 문서
+
+<br>
+
+## Competition Datasets (Reader)
 
 ![데이터 분포](./assets/dataset.png)
 
@@ -88,11 +99,25 @@ bash ./install/install_requirements.sh
 ./data/                        # 전체 데이터
     ./train_dataset/           # 학습에 사용할 데이터셋. train 과 validation 으로 구성 
     ./test_dataset/            # 제출에 사용될 데이터셋. validation 으로 구성 
-    ./wikipedia_documents.json # 위키피디아 문서 집합. retrieval을 위해 쓰이는 corpus.
 ```
+
+<br>
+
+## Additional Datasets (Reader)
+
+외부 데이터인 KorQuAD, Ko-WIKI를 추가하여 약 12만개의 데이터셋 구성되어 있습니다.
+
+```bash
+./data/                           # 전체 데이터
+    ./wiki_korQuAD_aug_dataset/   # 학습에 사용할 외부 데이터셋.
+```
+
+<br>
 
 data에 대한 argument 는 `arguments.py` 의 `DataTrainingArguments` 에서 확인 가능합니다.  
 만약 arguments 에 대한 세팅을 직접하고 싶다면 `arguments.py` 를 참고해주세요. 
+
+
 
 <br>
 
@@ -172,9 +197,17 @@ python inference.py --output_dir ./outputs/test_dataset/ --dataset_name ../data/
 
 - TF-IDF
 
-<img src="./assets/tf.png" height=45 width=340>  
-<img src="./assets/idf.png" height=45 width=150>
-<img src="./assets/tfidf.png" width=500>
+$$
+TF(t,d) = \frac{\text{number of times t appears in d}}{\text{total number of terms in d}}
+$$
+
+$$
+IDF(t) = log \frac{N}{DF(t)}
+$$
+
+$$
+TF-IDF(t,d) = TF(t,d) * IDF(t)
+$$
   
 단어의 등장빈도(TF)와 단어가 제공하는 정보의 양(IDF)를 이용한 function
 
@@ -205,18 +238,86 @@ ColBERT는 각 문서에 대한 점수를 생성하고 Cross-entropy loss를 이
 <br>
 
 ## Reader
+<br>
 
-- BERT
+### BERT
 
-- BERT multilingual
+<img src="./assets/bert.png" width=500>
+
+`Masked Language Modeling`과 `Next Sentence Prediction`을 통한 사전학습
+
+- klue/bert
+  - data : 모두의 말뭉치, 위키, 뉴스 등 한국어 데이터 62GB
+  - vocab size : 32000
+  - wordpiece tokenizer
+
+<br>
+
+- bert-multilingual
+  - data : 104개 언어의 위키피디아 데이터
+  - vocab size : 119547
+  - wordpiece tokenizer
+
+<br>
+
+### RoBERTa
+
+<img src="./assets/roberta.png" width=500>
+
+`Dynamic Masking`기법과 더 긴 학습 시간과 큰 데이터 사용
 
 - klue/RoBERTa
+  - data : 위키피디아, 뉴스 등
+  - vocab size : 32000
+  - wordpiece
+
+<br>
 
 - xlm/RoBERTa
+  - data : 100개의 언어가 포함되고 필터링된 CommonCrawl (2.5TB)
+  - vocab size : 250002
+  - sentencepiece
 
-- ELECTRA
+<br>
+
+### ELECTRA
+
+<img src="./assets/electra.png" width=500>
+
+- Koelectra
+  - data : 뉴스, 위키, 나무위키 모두의 말뭉치 등 (20GB)
+  - vocab size : 35000
+  - wordpiece
+
+<br>
+
+# Ensemble
+
+## Hard Voting
+
+각 모델들의 결과값의 확률분포를 통해 가장 큰 확률을 나타내는 값에 해당하는 값을 최종 결과값으로 채택하는 방식
+
+## Soft Voting
+
+각 모델들이 추론한 N개의 확률 값을 동일한 정답을 가진 확률을 모두 더하여 가장 높은 확률을 채택하는 방식
+
+## Weighted Voting
+
+Soft Voting을 기반으로 총 합이 10이 되도록 하는 가중치를 분배하여 weighted voting을 수행  
 
 
 <br>
 
 # Results
+
+|Model|Exact Match|F1 score|
+|:-:|:-:|:-:|
+|klue/bert-base|46.25|54.89|
+|bert-base-multilingual|49.58|55.50|
+|klue/roberta-large|69.58|76.84|
+|xlm-roberta-large|61.67|71.85|
+|KoELECTRA|57.5|63.11|
+
+
+
+
